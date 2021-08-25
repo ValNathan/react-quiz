@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import Select from "react-select";
 import { fetchQuizQuestions } from "./API";
 
 //Components
@@ -17,7 +18,7 @@ export type AnswerObject = {
   correctAnswer: string;
 };
 
-const TOTAL_QUESTIONS = 10;
+//const TOTAL_QUESTIONS = 10;
 
 const App = () => {
   const [loading, setLoading] = useState(false);
@@ -26,16 +27,24 @@ const App = () => {
   const [userAnswers, setUserAnswers] = useState<AnswerObject[]>([]);
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(true);
-
-  console.log(questions);
+  const [newGame, setNewGame] = useState(true);
+  const [difficulty, setDifficulty] = useState({
+    value: Difficulty.EASY,
+    label: "Easy",
+  });
+  const [totalQuestions, setTotalQuestions] = useState({
+    value: 10,
+    label: "10",
+  });
 
   const startTrivia = async () => {
     setLoading(true);
+    setNewGame(false);
     setGameOver(false);
 
     const newQuestions = await fetchQuizQuestions(
-      TOTAL_QUESTIONS,
-      Difficulty.EASY
+      totalQuestions.value,
+      difficulty.value
     );
 
     setQuestions(newQuestions);
@@ -44,6 +53,20 @@ const App = () => {
     setNumber(0);
     setLoading(false);
   };
+
+  const difficultyOptions = [
+    { value: Difficulty.EASY, label: "Easy" },
+    { value: Difficulty.MEDIUM, label: "Medium" },
+    { value: Difficulty.HARD, label: "Hard" },
+  ];
+
+  const amountOptions = [
+    { value: 10, label: "10" },
+    { value: 20, label: "20" },
+    { value: 30, label: "30" },
+    { value: 40, label: "40" },
+    { value: 50, label: "50" },
+  ];
 
   const checkAnswer = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!gameOver) {
@@ -66,7 +89,7 @@ const App = () => {
   const nextQuestion = () => {
     const nextQuestion = number + 1;
 
-    if (nextQuestion === TOTAL_QUESTIONS) {
+    if (nextQuestion === totalQuestions.value) {
       setGameOver(true);
     } else {
       setNumber(nextQuestion);
@@ -78,18 +101,53 @@ const App = () => {
       <GlobalStyle />
       <Wrapper>
         <h1>REACT QUIZ</h1>
-        {gameOver || userAnswers.length === TOTAL_QUESTIONS ? (
+        {newGame ? (
+          <Select
+            className="select"
+            options={difficultyOptions}
+            defaultValue={difficulty}
+            onChange={(difficulty) => {
+              if (difficulty) {
+                setDifficulty(difficulty);
+              }
+            }}
+          />
+        ) : null}
+        {newGame ? (
+          <Select
+            className="select"
+            options={amountOptions}
+            defaultValue={totalQuestions}
+            onChange={(total) => {
+              if (total) {
+                setTotalQuestions(total);
+              }
+            }}
+          />
+        ) : null}
+        {newGame ? (
           <button className="start" onClick={startTrivia}>
             Start
           </button>
         ) : null}
+        {(gameOver || userAnswers.length === totalQuestions.value) &&
+        !newGame ? (
+          <button
+            className="start"
+            onClick={() => {
+              setNewGame(true);
+            }}
+          >
+            New Game
+          </button>
+        ) : null}
 
-        {!gameOver && <p className="score">Score: {score}</p>}
+        {!gameOver && !newGame && <p className="score">Score: {score}</p>}
         {loading && <p className="loading">Loading Questions...</p>}
-        {!loading && !gameOver ? (
+        {!loading && !gameOver && !newGame ? (
           <QuestionCard
             questionNr={number + 1}
-            totalQuestion={TOTAL_QUESTIONS}
+            totalQuestion={totalQuestions.value}
             question={questions[number].question}
             answers={questions[number].answers}
             userAnswer={userAnswers ? userAnswers[number] : undefined}
@@ -99,8 +157,9 @@ const App = () => {
 
         {!gameOver &&
           !loading &&
+          !newGame &&
           userAnswers.length === number + 1 &&
-          number !== TOTAL_QUESTIONS - 1 && (
+          number !== totalQuestions.value - 1 && (
             <button className="next" onClick={nextQuestion}>
               Next Question
             </button>

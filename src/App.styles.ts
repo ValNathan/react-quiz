@@ -62,4 +62,8 @@ export const Wrapper = styled.div`
     .start {
         max-width: 200px;
     }
+
+    .select {
+        width: 100px;
+    }
 `
